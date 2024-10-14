@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fetch URL with Pagination</title>
+  <!-- Include Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      background-color: #002633; /* Dark Blue Background */
+    }
+  </style>
+</head>
+<body class="py-10">
+  <div class="container mx-auto p-6 bg-gray-100 rounded-lg shadow-lg max-w-xl">
+    <h2 class="text-3xl font-bold mb-6 text-gray-800 text-center">Fetch Data from URL</h2>
+    
+    <div class="bg-white p-4 rounded-lg">
+      <div class="mb-4">
+        <label for="url" class="block text-lg font-semibold mb-2">Enter URL to Fetch:</label>
+        <input type="text" id="url" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter API URL" value="https://jsonplaceholder.typicode.com/posts">
+      </div>
+
+      <button id="fetchBtn" class="bg-[#005F86] text-white w-full py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300">Fetch Data</button>
+
+      <!-- Error message -->
+      <div id="error" class="text-red-500 mt-4"></div>
+    </div>
+
+    <!-- Results Table -->
+    <div class="overflow-x-auto mt-6 bg-white p-4 rounded-lg">
+      <table id="resultsTable" class="min-w-full border border-gray-300 divide-y divide-gray-300 hidden">
+        <thead class="bg-blue-100">
+          <tr>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">ID</th>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Title</th>
+            <th class="px-4 py-2 text-left text-sm font-semibold text-gray-600">Body</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody" class="divide-y divide-gray-200">
+          <!-- Data will be injected here -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div id="pagination" class="mt-4 flex justify-between hidden">
+      <button id="prevPage" class="bg-[#005F86] text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none">Previous</button>
+      <span id="currentPage" class="text-gray-700"></span>
+      <button id="nextPage" class="bg-[#005F86] text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none">Next</button>
+    </div>
+  </div>
+
+  <script>
+    const fetchBtn = document.getElementById('fetchBtn');
+    const resultsTable = document.getElementById('resultsTable');
+    const tableBody = document.getElementById('tableBody');
+    const errorDiv = document.getElementById('error');
+    const paginationDiv = document.getElementById('pagination');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const currentPageSpan = document.getElementById('currentPage');
+
+    let data = [];
+    let currentPage = 1;
+    const itemsPerPage = 5;
+
+    fetchBtn.addEventListener('click', () => {
+      const url = document.getElementById('url').value;
+      
+      if (!url) {
+        errorDiv.textContent = "Please enter a valid URL.";
+        resultsTable.classList.add('hidden');
+        paginationDiv.classList.add('hidden');
+        return;
+      }
+
+      fetch(url)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Error: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(fetchedData => {
+          errorDiv.textContent = "";
+          data = fetchedData; // Store fetched data
+          currentPage = 1; // Reset to first page
+          displayPage(currentPage);
+        })
+        .catch(error => {
+          errorDiv.textContent = `Failed to fetch data: ${error.message}`;
+          resultsTable.classList.add('hidden');
+          paginationDiv.classList.add('hidden');
+        });
+    });
+
+    function displayPage(page) {
+      const start = (page - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageData = data.slice(start, end);
+
+      // Clear previous table data
+      tableBody.innerHTML = ""; 
+
+      // Populate table with current page data
+      pageData.forEach(item => {
+        const row = `
+          <tr>
+            <td class="px-4 py-2 text-gray-700">${item.id}</td>
+            <td class="px-4 py-2 text-gray-700">${item.title}</td>
+            <td class="px-4 py-2 text-gray-700">${item.body}</td>
+          </tr>
+        `;
+        tableBody.insertAdjacentHTML('beforeend', row);
+      });
+
+      // Show or hide pagination controls based on data length
+      resultsTable.classList.remove('hidden');
+      paginationDiv.classList.remove('hidden');
+      currentPageSpan.textContent = `Page ${currentPage} of ${Math.ceil(data.length / itemsPerPage)}`;
+
+      // Disable/Enable Previous and Next buttons
+      prevPageBtn.disabled = currentPage === 1;
+      nextPageBtn.disabled = end >= data.length;
+    }
+
+    // Handle pagination
+    prevPageBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        displayPage(currentPage);
+      }
+    });
+
+    nextPageBtn.addEventListener('click', () => {
+      if (currentPage * itemsPerPage < data.length) {
+        currentPage++;
+        displayPage(currentPage);
+      }
+    });
+  </script>
+</body>
+</html>
